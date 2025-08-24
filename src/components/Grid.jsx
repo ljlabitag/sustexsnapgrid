@@ -13,6 +13,8 @@ export default function Grid() {
   const [photos, setPhotos] = useState({});               // { [index]: dataURL }
   const [loading, setLoading] = useState(true);
 
+  const isComplete = Object.keys(photos).length === 8;
+
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
@@ -142,6 +144,8 @@ export default function Grid() {
             logoSrc={logo}
             prompts={prompts}
             options={{ drawLabels: false }}
+            disabled={!isComplete}      // <— key line
+            remaining={8 - Object.keys(photos).length}
           />
           <div className="space-x-2">
             <button
