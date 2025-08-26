@@ -3,14 +3,61 @@ import React, { useState } from "react";
 import Modal from "./Modal";
 import { renderBingoCollage, downloadBlob } from "../lib/collage";
 
-export default function ExportCollageButtons({
-  photos,
+/* --- small inline icons (inherit currentColor) --- */
+const IconDownload = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3v12" />
+    <path d="M7 10l5 5 5-5" />
+    <path d="M5 21h14" />
+  </svg>
+);
+
+const IconShare = ({ className = "w-4 h-4 shrink-0" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {/* tray */}
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+    {/* arrow head */}
+    <path d="M16 6l-4-4-4 4" />
+    {/* arrow stem */}
+    <path d="M12 2v14" />
+  </svg>
+);
+
+const IconCopy = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+const IconSpinner = ({ className = "w-4 h-4" }) => (
+  <svg className={`${className} animate-spin`} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" strokeWidth="4" />
+    <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="4" />
+  </svg>
+);
+
+export default function ExportButton({
+  variant = "download",
+  photos = {},
   logoSrc,
   prompts = [],
   options = {},
   disabled = false,
   remaining = 0,
-  shareScript = "I completed the SustEx SnapGrid challenge at SustEx 2025! #SUSTEX2025 @DOST @TheSMStore"
+  captionText = "Captured sustainability in action! Completed the SnapGrid challenge at #SUSTEX2025 🌍 Big thanks to @DOST and @TheSMStore 🙌",
+  className = "",
 }) {
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -34,7 +81,7 @@ export default function ExportCollageButtons({
     return blob;
   }
 
-  async function handleDownload() {
+  async function onDownload() {
     if (busy || disabled) return;
     setBusy(true);
     try {
@@ -47,24 +94,22 @@ export default function ExportCollageButtons({
     }
   }
 
-  function handleShareClick() {
+  function onOpenShare() {
     if (busy || disabled) return;
     setCopied(false);
     setShareOpen(true);
   }
 
-  async function handleCopyScript() {
+  async function onCopyCaption() {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareScript);
+        await navigator.clipboard.writeText(captionText);
       } else {
-        // Fallback
         const ta = document.createElement("textarea");
-        ta.value = shareScript;
+        ta.value = captionText;
         ta.style.position = "fixed";
         ta.style.left = "-9999px";
         document.body.appendChild(ta);
-        ta.focus();
         ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
@@ -76,7 +121,7 @@ export default function ExportCollageButtons({
     }
   }
 
-  async function handleShareNow() {
+  async function onShareNow() {
     if (!copied || busy) return;
     setBusy(true);
     try {
@@ -87,11 +132,11 @@ export default function ExportCollageButtons({
         await navigator.share({
           files: [file],
           title: "Photo Challenge Bingo",
-          text: shareScript,
+          text: captionText,
         });
         setShareOpen(false);
       } else {
-        alert("Sharing is not supported on this device/browser. You can download the image and post it manually.");
+        alert("Sharing is not supported on this device/browser. You can download and post manually.");
       }
     } catch (e) {
       console.error("Share failed", e);
@@ -101,82 +146,119 @@ export default function ExportCollageButtons({
   }
 
   const isDisabled = busy || disabled;
-  const labelHint = disabled ? `Complete ${remaining} more to export` : undefined;
+  const hint = disabled ? `Complete ${remaining} more to export` : undefined;
 
+  if (variant === "download") {
+    return (
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={isDisabled}
+        title={hint || "Download collage"}
+        className={`btn-outline ${className}`}
+        aria-label="Download collage"
+      >
+        {busy ? (
+          <span className="inline-flex items-center gap-2">
+            <IconSpinner />
+            Working…
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2">
+            <IconDownload />
+            Download
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  // variant === 'share'
   return (
-    <div className="flex items-center space-x-2">
-      {/* Download */}
+    <>
       <button
         type="button"
-        onClick={handleDownload}
+        onClick={onOpenShare}
         disabled={isDisabled}
-        title={labelHint || "Download collage"}
-        className="px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        title={hint || "Share collage"}
+        className={`btn-primary ${className}`}
+        aria-label="Share collage"
       >
-        {busy ? "Working..." : "Download"}
+        {busy ? (
+          <span className="inline-flex items-center gap-2">
+            <IconSpinner />
+            Working…
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2">
+            <IconShare />
+            Share
+          </span>
+        )}
       </button>
 
-      {/* Share (opens modal) */}
-      <button
-        type="button"
-        onClick={handleShareClick}
-        disabled={isDisabled}
-        title={labelHint || "Share collage"}
-        className="px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Share
-      </button>
-
-      {disabled && (
-        <span className="text-xs text-gray-500">{labelHint}</span>
-      )}
-
-      {/* Share caption modal */}
       <Modal open={shareOpen} onClose={() => (!busy && setShareOpen(false))}>
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-800 text-center">Recommended caption</h2>
-          <p className="text-xs text-gray-600 text-center">
-            Copy the caption first, then tap Share.
-          </p>
+        <div className="space-y-3">
+          <h2 className="modal-header">Recommended caption</h2>
+          <p className="muted text-xs text-center">Copy the caption, then tap Share.</p>
 
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
-            <textarea
-              readOnly
-              value={shareScript}
-              className="w-full h-28 p-3 text-sm outline-none resize-none"
-            />
-          </div>
+          <textarea
+            readOnly
+            value={captionText}
+            className="caption-box h-28 resize-none"
+            aria-label="Share caption"
+          />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
             <button
               type="button"
-              onClick={handleCopyScript}
+              onClick={onCopyCaption}
               disabled={busy}
-              className="px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50"
+              className="btn-outline w-full"
+              aria-label="Copy caption to clipboard"
             >
-              {copied ? "Copied ✓" : "Copy caption"}
+              <span className="inline-flex items-center gap-2">
+                <IconCopy />
+                {copied ? "Copied ✓" : "Copy caption"}
+              </span>
             </button>
+
             <button
               type="button"
-              onClick={handleShareNow}
+              onClick={onShareNow}
               disabled={!copied || busy}
-              className={`px-3 py-2 rounded-lg text-white ${(!copied || busy) ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"}`}
-              title={!copied ? "Copy the caption first" : "Share now"}
+              className="btn-primary w-full"
+              aria-label={copied ? "Share now" : "Share now (disabled until you copy the caption)"}
+              title={!copied ? "Copy the caption first" : undefined}
             >
-              Share now
+              {busy ? (
+                <span className="inline-flex items-center gap-2">
+                  <IconSpinner />
+                  Working…
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <IconShare />
+                  Share now
+                </span>
+              )}
+            </button>
+
+            <p className="text-[11px] text-center text-brand-ink/65" aria-live="polite">
+              {copied ? "Caption copied. You can share now." : "Share button enables after you copy the caption."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShareOpen(false)}
+              disabled={busy}
+              className="btn-ghost w-full"
+            >
+              Cancel
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShareOpen(false)}
-            disabled={busy}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50"
-          >
-            Cancel
-          </button>
         </div>
       </Modal>
-    </div>
+    </>
   );
 }

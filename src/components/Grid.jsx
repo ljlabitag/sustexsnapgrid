@@ -13,221 +13,206 @@ export default function Grid() {
   const [photos, setPhotos] = useState({});               // { [index]: dataURL }
   const [loading, setLoading] = useState(true);
 
-  const isComplete = Object.keys(photos).length === 8;
-
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
-  // Load saved photos from IndexedDB on first render
+  const filledCount = Object.keys(photos).length;
+  const isComplete = filledCount === 8;
+
   useEffect(() => {
-    let live = true;
+    let mounted = true;
     (async () => {
-      try {
-        const saved = await getAllPhotos();
-        if (live) setPhotos(saved || {});
-      } finally {
-        if (live) setLoading(false);
-      }
+      const data = await getAllPhotos();
+      if (mounted) setPhotos(data || {});
+      setLoading(false);
     })();
-    return () => { live = false; };
+    return () => { mounted = false; };
   }, []);
 
-  function openFor(index) {
-    setActiveIndex(index);
+  const handleCellClick = (i) => setActiveIndex(i);
+
+  const handleFileChosen = async (file) => {
+    if (!file || activeIndex == null) return;
+    const dataUrl = await fileToSquareDataURL(file, 1080);
+    setTempPreview(dataUrl);
+  };
+
+  const handleSave = async () => {
+    if (activeIndex == null || !tempPreview) return;
+    await setPhoto(activeIndex, tempPreview);
+    setPhotos((prev) => ({ ...prev, [activeIndex]: tempPreview }));
     setTempPreview(null);
-  }
-
-  async function handleFileChosen(file) {
-    if (!file) return;
-    const dataUrl = await fileToSquareDataURL(file, {
-    side: 1024,   // adjust to 1280 if you want higher res
-    quality: 0.72
-    });
-
-    setTempPreview(dataUrl); // for modal preview
-  }
-
-  async function handleUsePhoto() {
-    if (!tempPreview || activeIndex == null) return;
-    const idx = String(activeIndex);
-
-    // Save to React state immediately for snappy UI
-    setPhotos(prev => ({ ...prev, [idx]: tempPreview }));
-
-    // Persist in the background to IndexedDB
-    try {
-      await setPhoto(idx, tempPreview);
-    } catch (e) {
-      console.error("Failed to save photo to IndexedDB:", e);
-    }
-
-    // reset modal state
     setActiveIndex(null);
-    setTempPreview(null);
-  }
+  };
 
-  function handleRetake() {
-    setTempPreview(null);
-  }
-
-  async function handleRemovePhoto(index) {
-    const idx = String(index);
-    setPhotos(prev => {
+  const handleRemove = async (i) => {
+    await deletePhoto(i);
+    setPhotos((prev) => {
       const copy = { ...prev };
-      delete copy[idx];
+      delete copy[i];
       return copy;
     });
-    try {
-      await deletePhoto(idx);
-    } catch (e) {
-      console.error("Failed to delete photo:", e);
-    }
-  }
+  };
 
-  async function handleClearAll() {
+  const handleClearAll = async () => {
+    await clearAllPhotos();
     setPhotos({});
-    try {
-      await clearAllPhotos();
-    } catch (e) {
-      console.error("Failed to clear photos:", e);
-    }
-  }
+  };
 
-  const cells = Array.from({ length: 9 }, (_, index) => {
-    if (index === 4) {
-      return (
-        <div
-          key={index}
-          className="w-full h-full flex items-center justify-center bg-white"
-        >
-          <img src={logo} alt="Logo" />
-        </div>
-      );
-    }
+  if (loading) {
     return (
-      <div key={index} className="relative">
-        <Cell
-          index={index}
-          label={prompts[index]}
-          photo={photos[index]}
-          onClick={() => openFor(index)}
-        />
-        {photos[index] && (
-          <button
-            type="button"
-            className="absolute top-1 right-1 bg-white/90 rounded-md px-2 py-1 text-[10px] border border-gray-300 hover:bg-white"
-            onClick={(e) => { e.stopPropagation(); handleRemovePhoto(index); }}
-            aria-label="Remove photo"
-            title="Remove"
-          >
-            Remove
-          </button>
-        )}
-      </div>
+      <div className="py-12 text-center text-sm text-brand-ink/70">Loading…</div>
     );
-  });
+  }
 
   return (
     <>
-      <div className="mx-auto w-[min(90vw,90svh)]">
-        <div className="w-full aspect-square grid grid-cols-3 grid-rows-3">
-          {cells}
-        </div>
+      {/* Top actions (separate from the grid) */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm text-brand-ink/70">Done {filledCount}/8</div>
+        <button
+          type="button"
+          onClick={handleClearAll}
+          className="btn-ghost"
+        >
+          Clear all
+        </button>
+      </div>
 
-        {/* Simple footer actions */}
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-sm text-gray-700">
-            {loading ? "Loading..." : `Done ${Object.keys(photos).length}/8`}
-          </span>
-          <ExportButton 
-            photos={photos}
-            logoSrc={logo}
-            prompts={prompts}
-            options={{ drawLabels: false }}
-            disabled={!isComplete}      // <— key line
-            remaining={8 - Object.keys(photos).length}
-          />
-          <div className="space-x-2">
-            <button
-              type="button"
-              onClick={handleClearAll}
-              className="px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-400 text-sm"
-            >
-              Clear all
-            </button>
-          </div>
+      {/* Square grid wrapper — maximizes width and keeps a perfect square */}
+      <div className="w-full aspect-square relative">
+        {/* Absolutely fill the square box with the 3x3 grid */}
+        <div className="absolute inset-0 grid grid-cols-3 gap-2 sm:gap-3">
+          {prompts.map((label, i) => {
+            if (i === 4) {
+              // Center static logo cell — must fill entire cell all the time
+              return (
+                <div
+                  key={i}
+                  className="relative aspect-square rounded-none overflow-hidden"
+                >
+                  <img
+                    src={logo}
+                    alt="Event logo"
+                    className="absolute inset-0 w-full h-full object-cover" /* fill completely */
+                    draggable="false"
+                  />
+                </div>
+              );
+            }
+            const src = photos[i];
+            return (
+              <Cell
+                key={i}
+                index={i}
+                label={label}
+                photo={src}
+                onClick={handleCellClick}
+                onRemove={handleRemove}
+              />
+            );
+          })}
         </div>
       </div>
 
-      <Modal open={activeIndex !== null} onClose={() => { setActiveIndex(null); setTempPreview(null); }}>
-        {activeIndex !== null && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800 text-center">
-              {prompts[activeIndex]}
-            </h2>
+      {/* Bottom actions (also separate from the grid) */}
+      <div className="mt-6 flex gap-2">
+        <ExportButton
+          variant="download"
+          disabled={!isComplete}
+          remaining={8 - filledCount}
+          photos={photos}
+          logoSrc={logo}
+          prompts={prompts}
+        />
+        <ExportButton
+          variant="share"
+          disabled={!isComplete}
+          remaining={8 - filledCount}
+          photos={photos}
+          logoSrc={logo}
+          prompts={prompts}
+        />
+      </div>
 
-            {tempPreview ? (
-              <>
-                <div className="w-full h-56 rounded-lg overflow-hidden bg-gray-100">
-                  <img src={tempPreview} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={handleRetake}
-                    className="px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400"
-                  >
-                    Retake
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUsePhoto}
-                    className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    Use photo
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 text-center">Choose how you want to add a photo.</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400"
-                  >
-                    📷 Take Photo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => galleryInputRef.current?.click()}
-                    className="px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400"
-                  >
-                    🖼️ Upload
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* hidden inputs */}
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; handleFileChosen(f); e.target.value = ""; }}
-            />
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; handleFileChosen(f); e.target.value = ""; }}
-            />
+      {/* Capture / Upload modal */}
+      <Modal open={activeIndex != null} onClose={() => { setActiveIndex(null); setTempPreview(null); }}>
+        <div className="space-y-3">
+          <div className="text-sm text-brand-ink">
+            <span className="font-semibold">Task:</span>{" "}
+            <span className="text-brand-ink/80">{activeIndex != null ? prompts[activeIndex] : ""}</span>
           </div>
-        )}
+
+          {/* Preview box (if we have a temp image) */}
+          {tempPreview ? (
+            <div className="card p-2">
+              <img
+                src={tempPreview}
+                alt="Preview"
+                className="w-full aspect-square object-cover rounded-none"
+              />
+            </div>
+          ) : (
+            <p className="muted text-sm">Choose a source to add your photo.</p>
+          )}
+
+          {/* Source buttons */}
+          {!tempPreview && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="btn-primary"
+              >
+                Take photo
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="btn-outline"
+              >
+                Upload
+              </button>
+
+              {/* Hidden inputs */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; handleFileChosen(f); e.target.value = ""; }}
+              />
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; handleFileChosen(f); e.target.value = ""; }}
+              />
+            </div>
+          )}
+
+          {/* Save / Replace actions when preview is present */}
+          {tempPreview && (
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => setTempPreview(null)}
+              >
+                Choose another
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSave}
+              >
+                Save
+              </button>
+            </div>
+          )}
+        </div>
       </Modal>
     </>
   );

@@ -1,1 +1,82 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* Optional: your design tokens and utilities */
+@theme {
+  --color-brand-primary: #53C1ED;
+  --color-brand-surface: #E1F1EC;
+  --color-brand-accent:  #CBBD8D;
+  --color-brand-success: #5CBB64;
+  --color-brand-teal:    #289B9C;
+  --color-brand-ink:     #0F172A;
+
+  --radius-card: 1rem;
+  --shadow-soft: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+
+/* Extra tokens (complement your current ones) */
+@theme {
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.625rem; /* 10px */
+  --radius-lg: 0.875rem; /* 14px */
+  --radius-xl: 1.25rem;  /* 20px */
+
+  --shadow-soft-2: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-raised: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+/* Base polish */
+:root { color: var(--color-brand-ink); }
+html, body, #root { height: 100%; }
+body { background: color-mix(in oklab, var(--color-brand-surface) 80%, white); }
+
+/* Accessibility + micro-interactions */
+@utility ring-focus {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+}
+@utility tap-soft {
+  @apply motion-safe:active:scale-95 motion-reduce:active:opacity-80 transition;
+}
+@utility muted { @apply text-brand-ink/65; }
+
+/* Buttons (extend your existing button set with consistent behavior) */
+@utility btn { @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-[var(--radius-md)] text-sm font-medium ring-focus tap-soft; }
+@utility btn-primary { @apply btn bg-brand-primary text-white enabled:hover:bg-[#3db5e7] disabled:opacity-50 disabled:cursor-not-allowed; }
+@utility btn-outline  { @apply btn border border-brand-teal text-brand-teal enabled:hover:bg-brand-teal/5; }
+@utility btn-ghost    { @apply btn bg-transparent text-brand-ink enabled:hover:bg-brand-ink/5; }
+
+/* Badge */
+@utility badge {
+  @apply inline-flex items-center justify-center rounded-full text-white text-[10px] leading-none font-semibold;
+  width: 18px; height: 18px; box-shadow: 0 2px 6px rgba(16,24,40,0.18);
+}
+.badge-success { background: var(--color-brand-success); }
+.badge-primary { background: var(--color-brand-primary); }
+
+/* Card & panel */
+@utility card { @apply bg-white rounded-card shadow-soft; }
+@utility panel { @apply card p-4; }
+
+/* Soft divider */
+@utility soft-divider { @apply border-t border-brand-ink/10; }
+
+/* Modal (bottom sheet on mobile, centered on larger screens) */
+@utility modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50; }
+@utility modal {
+  @apply fixed inset-x-4 bottom-6 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
+         w-auto sm:min-w-[20rem] max-w-[min(560px,92vw)] card p-4 z-50;
+}
+@utility modal-header { @apply mb-3 text-base font-semibold; }
+@utility modal-actions { @apply mt-4 flex gap-2 justify-end; }
+
+/* Caption textarea */
+@utility caption-box { @apply w-full rounded-[var(--radius-md)] border border-brand-ink/10 bg-brand-ink/5 p-3 text-sm leading-5; }
+
+/* Progress bar */
+@utility progress-wrap { @apply w-full h-2 rounded-full bg-brand-ink/10 overflow-hidden; }
+@utility progress-bar  { @apply h-full bg-brand-primary transition-[width] duration-300 ease-out; }
+
+/* Toasts */
+@utility toast-wrap { @apply fixed bottom-4 inset-x-4 flex flex-col items-center gap-2 pointer-events-none z-[60]; }
+@utility toast      { @apply pointer-events-auto bg-white text-brand-ink text-sm px-3 py-2 rounded-[var(--radius-md)] shadow-[var(--shadow-soft-2)]; }
