@@ -32,12 +32,12 @@ export default function App() {
               </p>
             </div>
           </div>
-          {/* Progress placeholder (wired inside Grid later if desired) */}
+          {/* Progress placeholder (wired inside Grid later if desired)
           <div className="hidden sm:block w-40">
             <div className="progress-wrap">
               <div className="progress-bar" style={{ width: "0%" }} />
             </div>
-          </div>
+          </div> */}
         </div>
       </header>
 
