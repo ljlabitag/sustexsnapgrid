@@ -1,6 +1,7 @@
 // App.jsx
 import React from "react";
 import Grid from "./components/Grid";
+import Footer from "./components/Footer";
 
 export default function App() {
   return (
@@ -25,9 +26,9 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl sm:text-4xl font-semibold text-brand-ink leading-tight">SustEx SnapGrid</h1>
+              <h1 className="text-2xl sm:text-4xl font-semibold text-brand-ink leading-tight">SustEx BINGO Card</h1>
               <p className="muted text-sm sm:text-lg leading-snug">
-                Welcome to the Sustainability Expo 2025!<br/> Complete all 8 tasks to win a prize.
+                Welcome to the Sustainability Expo 2025!<br/> Snap photos, complete card, WIN a prize!
               </p>
             </div>
           </div>
@@ -43,6 +44,7 @@ export default function App() {
       {/* Content */}
       <main className="mx-auto max-w-xl px-4 py-4">
           <Grid />
+          <Footer />
       </main>
     </div>
   );
