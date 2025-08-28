@@ -58,8 +58,9 @@ export default function Cell({ label, index, photo, thumbUrl, onClick, onRemove 
               </span>
             </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center px-2 text-center text-[11px] leading-tight">
+            <div className="w-full h-full flex flex-col items-center justify-center px-2 font-semibold text-center text-[11px] leading-tight">
               {label}
+              <div className="mt-0.8 text-[18px] text-brand-ink/60">+</div>
             </div>
           )
         )}
