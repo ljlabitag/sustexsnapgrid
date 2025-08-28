@@ -56,7 +56,7 @@ export default function ExportButton({
   options = {},
   disabled = false,
   remaining = 0,
-  captionText = "Captured sustainability in action! Completed the SnapGrid challenge at #SUSTEX2025 🌍 Big thanks to @DOST and @TheSMStore 🙌",
+  captionText = "🌱 Captured sustainability in action! Completed the Sustex BINGO Card game challenge at #SUSTEX2025 🎉 Big thanks to @DOSTph and @officialsmsupermalls 🙌",
   className = "",
 }) {
   const [busy, setBusy] = useState(false);
